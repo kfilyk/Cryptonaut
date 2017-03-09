@@ -33,6 +33,7 @@ namespace Completed {
 		System.Random rand;							//Used to determine damage for attacks.
 		private int minDamage = 0;
 		private int maxDamage = 4;
+		private int direction = 0; //0=east, 1=west, 2= north, 3=south
 
 #if UNITY_IOS || UNITY_ANDROID || UNITY_WP8 || UNITY_IPHONE
         private Vector2 touchOrigin = -Vector2.one;	//Used to store location of screen touch origin for mobile controls.
@@ -100,9 +101,18 @@ namespace Completed {
 			vertical = (int) (Input.GetAxisRaw ("Vertical"));
 			
 			//Check if moving horizontally, if so set vertical to zero.
-			if(horizontal != 0)
-			{
-				vertical = 0;
+			if(horizontal != 0) {
+				if(horizontal>0 && direction==1) { // new direction > 0 (east) and old direction == 1 (west) ->  old direction set to new, animation mirrored
+					direction=0;
+					Vector3 newScale = transform.localScale;
+					newScale.x*=-1;
+					transform.localScale=newScale;
+				} else if(horizontal<0 && direction==0){
+					direction=1;
+					Vector3 newScale = transform.localScale;
+					newScale.x*=-1;
+					transform.localScale=newScale;
+				}
 			}
 			//Check if we are running on iOS, Android, Windows Phone 8 or Unity iPhone
 #elif UNITY_IOS || UNITY_ANDROID || UNITY_WP8 || UNITY_IPHONE
@@ -147,10 +157,7 @@ namespace Completed {
 			
 #endif //End of mobile platform dependendent compilation section started above with #elif
 			//Check if we have a non-zero value for horizontal or vertical
-			if(horizontal != 0 || vertical != 0)
-			{
-				//Call AttemptMove passing in the generic parameter Wall, since that is what Player may interact with if they encounter one (by attacking it)
-				//Pass in horizontal and vertical as parameters to specify the direction to move Player in.
+			if(horizontal != 0 || vertical != 0){
 				AttemptMove<Wall> (horizontal, vertical);
 			}
 		}
@@ -185,8 +192,8 @@ namespace Completed {
 			RaycastHit2D hit;
 			
 			//If Move returns true, meaning Player was able to move into an empty space.
-			if (Move (xDir, yDir, out hit)) 
-			{
+			if (Move (xDir, yDir, out hit)) {
+				
 				//Call RandomizeSfx of SoundManager to play the move sound, passing in two audio clips to choose from.
 				SoundManager.instance.RandomizeSfx (moveSound1, moveSound2);
 			}

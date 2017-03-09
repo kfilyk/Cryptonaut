@@ -60,8 +60,6 @@
      <Compile Include="Assets\Completed\Scripts\SoundManager.cs" />
      <Compile Include="Assets\Completed\Scripts\Wall.cs" />
      <Compile Include="Assets\Completed\Scripts\dunGenScript.cs" />
-     <Compile Include="Assets\TutorialInfo\Scripts\TutorialInfo.cs" />
-     <None Include="Assets\TutorialInfo\Fonts\LICENSE.txt" />
      <None Include="Assets\Fonts\OFL.txt" />
  <Reference Include="UnityEngine.Analytics">
  <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/UnityAnalytics/UnityEngine.Analytics.dll</HintPath>
