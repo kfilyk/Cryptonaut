@@ -16,8 +16,7 @@ namespace Completed
 		
 		
 		//Protected, virtual functions can be overridden by inheriting classes.
-		protected virtual void Start ()
-		{
+		protected virtual void Start() {
 			//Get a component reference to this object's BoxCollider2D
 			boxCollider = GetComponent <BoxCollider2D> ();
 			
@@ -49,8 +48,7 @@ namespace Completed
 			boxCollider.enabled = true;
 			
 			//Check if anything was hit
-			if(hit.transform == null)
-			{
+			if(hit.transform == null) {
 				//If nothing was hit, start SmoothMovement co-routine passing in the Vector2 end as destination
 				StartCoroutine (SmoothMovement (end));
 				

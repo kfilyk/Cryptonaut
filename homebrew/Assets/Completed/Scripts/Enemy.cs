@@ -4,11 +4,14 @@ using System.Collections;
 namespace Completed
 {
 	//Enemy inherits from MovingObject, our base class for objects that can move, Player also inherits from this.
-	public class Enemy : MovingObject
-	{
-		public int playerDamage; 							//The amount of food points to subtract from the player when attacking.
+	public class Enemy : MovingObject {
+		public int playerDamage;	 						//The amount of food points to subtract from the player when attacking.
+		public static int maxHP;							//The max amount of health the enemy has, and their initial health.
+		public int HP;										//The enemy's current health.
 		public AudioClip attackSound1;						//First of two audio clips to play when attacking the player.
 		public AudioClip attackSound2;						//Second of two audio clips to play when attacking the player.
+		public AudioClip chopSound1;						//1 of 2 audio clips that play when the enemy is attacked by the player.
+		public AudioClip chopSound2;						//2 of 2 audio clips that play when the enemy is attacked by the player.
 		public int sightRange = 10;
 		private Animator animator;							//Variable of type Animator to store a reference to the enemy's Animator component.
 		private Transform target;							//Transform to attempt to move toward each turn.
@@ -16,8 +19,7 @@ namespace Completed
 		
 		
 		//Start overrides the virtual Start function of the base class.
-		protected override void Start ()
-		{
+		protected override void Start () {
 			//Register this enemy with our instance of GameManager by adding it to a list of Enemy objects. 
 			//This allows the GameManager to issue movement commands.
 			GameManager.instance.AddEnemyToList (this);
@@ -35,14 +37,11 @@ namespace Completed
 		
 		//Override the AttemptMove function of MovingObject to include functionality needed for Enemy to skip turns.
 		//See comments in MovingObject for more on how base AttemptMove function works.
-		protected override void AttemptMove <T> (int xDir, int yDir)
-		{
+		protected override void AttemptMove <T> (int xDir, int yDir) {
 			//Check if skipMove is true, if so set it to false and skip this turn.
-			if(skipMove)
-			{
+			if(skipMove) {
 				skipMove = false;
-				return;
-				
+				return;	
 			}
 			
 			//Call the AttemptMove function from MovingObject.
@@ -95,13 +94,26 @@ namespace Completed
 			Player hitPlayer = component as Player;
 			
 			//Call the LoseFood function of hitPlayer passing it playerDamage, the amount of foodpoints to be subtracted.
-			hitPlayer.LoseFood (playerDamage);
+			//hitPlayer.LoseFood (playerDamage);
+			hitPlayer.DamagePlayer (playerDamage);
 			
 			//Set the attack trigger of animator to trigger Enemy attack animation.
 			animator.SetTrigger ("enemyAttack");
 			
 			//Call the RandomizeSfx function of SoundManager passing in the two audio clips to choose randomly between.
 			SoundManager.instance.RandomizeSfx (attackSound1, attackSound2);
+		}
+		public void DamageEnemy (int enemyDamage) {
+			//Call the RandomizeSfx function of SoundManager to play one of two chop sounds.
+			SoundManager.instance.RandomizeSfx (chopSound1, chopSound2);
+
+			//Subtract loss from hit point total.
+			HP -= enemyDamage;
+
+			//If hit points are less than or equal to zero:
+			if (HP <= 0) {
+				gameObject.SetActive (false);
+			}
 		}
 	}
 }

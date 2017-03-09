@@ -11,7 +11,9 @@ namespace Completed {
 		public int pointsPerFood = 10;				//Number of points to add to player food points when picking up a food object.
 		public int pointsPerSoda = 20;				//Number of points to add to player food points when picking up a soda object.
 		public int wallDamage = 1;					//How much damage a player does to a wall when chopping it.
-		Text foodText;						//UI Text to display current player food total.
+		//Text foodText;						//UI Text to display current player food total.
+		Text HPText;								//UI Text to display current player HP.
+		Text DamageText;							//UI Text to display when player attacks.
 		public AudioClip moveSound1;				//1 of 2 Audio clips to play when player moves.
 		public AudioClip moveSound2;				//2 of 2 Audio clips to play when player moves.
 		public AudioClip eatSound1;					//1 of 2 Audio clips to play when player collects a food object.
@@ -20,7 +22,17 @@ namespace Completed {
 		public AudioClip drinkSound2;				//2 of 2 Audio clips to play when player collects a soda object.
 		public AudioClip gameOverSound;				//Audio clip to play when player dies.
 		private Animator animator;					//Used to store a reference to the Player's animator component.
-		private int food;                           //Used to store player food points total during level.
+		//private int food;                           //Used to store player food points total during level.
+		private int strength;                       //Used to store player Strength stat.
+		private int agility;                        //Used to store player Agility stat.
+		private int constitution;                   //Used to store player Constitution stat.
+		private int intellect;                      //Used to store player Intellect stat.
+		private int HP;                             //Used to store player HP total during level. Max HP is 4 * constitution.
+		private int maxHP; 
+		private int stepsToHeal;					//Used to store the number of steps that the player must walk before gaining back 1 HP. Counts down from 5 steps.
+		System.Random rand;							//Used to determine damage for attacks.
+		private int minDamage = 0;
+		private int maxDamage = 4;
 
 #if UNITY_IOS || UNITY_ANDROID || UNITY_WP8 || UNITY_IPHONE
         private Vector2 touchOrigin = -Vector2.one;	//Used to store location of screen touch origin for mobile controls.
@@ -34,11 +46,28 @@ namespace Completed {
 			animator = GetComponent<Animator>();
 			//GameObject GameManager = GameObject.Find ("GameManager");
 
+			strength = 4;
+			agility = 4;
+			constitution = 4;
+			intellect = 4;
+
+			stepsToHeal = 10;
+
+			rand = new System.Random();
+			maxHP = 100;
+			HP = maxHP;
+			HPText = GameObject.Find ("HPText").GetComponent<Text>();
+			HPText.text = "HP: " + HP;
+			DamageText = GameObject.Find ("DamageText").GetComponent<Text>();
+			DamageText.text = "";
+
 			//Get the current food point total stored in GameManager.instance between levels.
+			/*
 			food = GameManager.playerFoodPoints;
 			foodText = GameObject.Find ("FoodText").GetComponent<Text>();
 			foodText.text = "Food: " + food;
-			
+			*/
+
 			//Call the Start function of the MovingObject base class.
 			base.Start ();
 		}
@@ -48,7 +77,8 @@ namespace Completed {
 		private void OnDisable ()
 		{
 			//When Player object is disabled, store the current local food total in the GameManager so it can be re-loaded in next level.
-			GameManager.playerFoodPoints = food;
+			GameManager.instance.playerHP = HP;
+			//GameManager.playerFoodPoints = food;
 		}
 		
 		
@@ -129,11 +159,24 @@ namespace Completed {
 		//AttemptMove takes a generic parameter T which for Player will be of the type Wall, it also takes integers for x and y direction to move in.
 		protected override void AttemptMove <T> (int xDir, int yDir)
 		{
+			HPText.text = "HP: " + HP;
+			stepsToHeal--;
+			if (HP == maxHP) {
+				stepsToHeal = 10;
+			}else if (stepsToHeal <= 0) {
+				HP += 1;
+				HPText.text = "+" + 1 + " HP: " + HP;
+				stepsToHeal = 10;
+			}
+
+			if (HP > maxHP) {
+				HP = maxHP;
+			}
 			//Every time player moves, subtract from food points total.
-			food--;
+			//food--;
 			
 			//Update food text display to reflect current score.
-			foodText.text = "Food: " + food;
+			//foodText.text = "Food: " + food;
 			
 			//Call the AttemptMove method of the base class, passing in the component T (in this case Wall) and x and y direction to move.
 			base.AttemptMove <T> (xDir, yDir);
@@ -156,16 +199,29 @@ namespace Completed {
 		
 		//OnCantMove overrides the abstract function OnCantMove in MovingObject.
 		//It takes a generic parameter T which in the case of Player is a Wall which the player can attack and destroy.
-		protected override void OnCantMove <T> (T component)
-		{
-			//Set hitWall to equal the component passed in as a parameter.
-			Wall hitWall = component as Wall;
-			
-			//Call the DamageWall function of the Wall we are hitting.
-			hitWall.DamageWall (wallDamage);
-			
-			//Set the attack trigger of the player's animation controller in order to play the player's attack animation.
-			animator.SetTrigger ("playerChop");
+		protected override void OnCantMove <T> (T component) {
+
+			//Check if we're hitting a wall
+			if (component.GetType () == typeof(Wall)) {
+				//Set hitWall to equal the component passed in as a parameter.
+				Wall hitWall = component as Wall;
+
+				//Call the DamageWall function of the Wall we are hitting.
+				hitWall.DamageWall (wallDamage);
+
+				//Set the attack trigger of the player's animation controller in order to play the player's attack animation.
+				animator.SetTrigger ("playerChop");
+
+			} else if (component is Enemy) {
+				Enemy hitEnemy = component as Enemy;
+
+				int damage = attackDamage ();
+
+				DamageText.text = "Dealt " + damage + " damage!";
+
+				hitEnemy.DamageEnemy (damage);
+				animator.SetTrigger ("playerChop");
+			}
 		}
 		
 		
@@ -183,13 +239,17 @@ namespace Completed {
 			}
 			
 			//Check if the tag of the trigger collided with is Food.
-			else if(other.tag == "Food")
-			{
+			else if(other.tag == "Food") {
 				//Add pointsPerFood to the players current food total.
-				food += pointsPerFood;
+				//food += pointsPerFood;
+
+				//Add pointsPerFood to the players current HP total.
+				HP += pointsPerFood;
+				//Update HPText to represent current total and notify player that they gained points
+				HPText.text = "+" + pointsPerFood + " HP: " + HP;
 				
 				//Update foodText to represent current total and notify player that they gained points
-				foodText.text = "+" + pointsPerFood + " Food: " + food;
+				//foodText.text = "+" + pointsPerFood + " Food: " + food;
 				
 				//Call the RandomizeSfx function of SoundManager and pass in two eating sounds to choose between to play the eating sound effect.
 				SoundManager.instance.RandomizeSfx (eatSound1, eatSound2);
@@ -199,13 +259,17 @@ namespace Completed {
 			}
 			
 			//Check if the tag of the trigger collided with is Soda.
-			else if(other.tag == "Soda")
-			{
+			else if(other.tag == "Soda"){
+				//Add pointsPerSoda to players HP points total
+				HP += pointsPerSoda;
+				//Update HPText to represent current total and notify player that they gained points
+				HPText.text = "+" + pointsPerSoda + " HP: " + HP;
+
 				//Add pointsPerSoda to players food points total
-				food += pointsPerSoda;
+				//food += pointsPerSoda;
 				
 				//Update foodText to represent current total and notify player that they gained points
-				foodText.text = "+" + pointsPerSoda + " Food: " + food;
+				//foodText.text = "+" + pointsPerSoda + " Food: " + food;
 				
 				//Call the RandomizeSfx function of SoundManager and pass in two drinking sounds to choose between to play the drinking sound effect.
 				SoundManager.instance.RandomizeSfx (drinkSound1, drinkSound2);
@@ -223,12 +287,32 @@ namespace Completed {
             //and not load all the scene object in the current scene.
 			SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex, LoadSceneMode.Single);
 		}
+
+		//LoseHP is called when an enemy attacks the player.
+		//It takes a parameter loss which specifies how many points to lose.
+		public void DamagePlayer (int damage) {
+			//Set the trigger for the player animator to transition to the playerHit animation.
+			animator.SetTrigger ("playerHit");
+
+			//Subtract lost HP from the players total.
+			HP -= damage;
+
+			//Update the HP display with the new total.
+			HPText.text = "-"+ damage + " HP: " + HP;
+
+			//Check to see if game has ended.
+			CheckIfGameOver ();
+		}
+
+		int attackDamage() {
+			int damage = rand.Next(minDamage, maxDamage + 1) + strength;
+			return damage;
+		}
 		
-		
+		/*
 		//LoseFood is called when an enemy attacks the player.
 		//It takes a parameter loss which specifies how many points to lose.
-		public void LoseFood (int loss)
-		{
+		public void LoseFood (int loss) {
 			//Set the trigger for the player animator to transition to the playerHit animation.
 			animator.SetTrigger ("playerHit");
 			
@@ -241,13 +325,14 @@ namespace Completed {
 			//Check to see if game has ended.
 			CheckIfGameOver ();
 		}
+		*/
 		
 		
 		//CheckIfGameOver checks if the player is out of food points and if so, ends the game.
 		private void CheckIfGameOver ()
 		{
 			//Check if food point total is less than or equal to zero.
-			if (food <= 0) 
+			if (HP <= 0) 
 			{
 				//Call the PlaySingle function of SoundManager and pass it the gameOverSound as the audio clip to play.
 				SoundManager.instance.PlaySingle (gameOverSound);
