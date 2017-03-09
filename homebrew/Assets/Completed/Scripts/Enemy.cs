@@ -16,7 +16,7 @@ namespace Completed
 		private Animator animator;							//Variable of type Animator to store a reference to the enemy's Animator component.
 		private Transform target;							//Transform to attempt to move toward each turn.
 		private bool skipMove;								//Boolean to determine whether or not enemy should skip a turn or move this turn.
-		private int direction = 0; //0=east, 1=west, 2= north, 3=south
+		private int direction = 1; //0=east, 1=west, 2= north, 3=south
 		
 		//Start overrides the virtual Start function of the base class.
 		protected override void Start () {
@@ -61,7 +61,18 @@ namespace Completed
 					
 				//If the difference in x positions isnt approximately zero (Epsilon) do the following: 
 				if (Mathf.Abs (target.position.x - transform.position.x) > float.Epsilon) {
-					xDir = target.position.x > transform.position.x ? 1 : -1;
+					xDir = target.position.x > transform.position.x ? 1 : -1; // The enemy sprites "face" west -> their original direction =1
+					if (xDir > 0 && direction == 1) {
+						direction = 0;
+						Vector3 newScale = transform.localScale;
+						newScale.x *= -1;	
+						transform.localScale = newScale;
+					} else if (xDir < 0 && direction == 0) {
+						direction = 1;
+						Vector3 newScale = transform.localScale;
+						newScale.x *= -1;	
+						transform.localScale = newScale;
+					}
 				} 
 				if (Mathf.Abs (target.position.y - transform.position.y) > float.Epsilon) {
 					yDir = target.position.y > transform.position.y ? 1 : -1;
@@ -70,21 +81,6 @@ namespace Completed
 				return true;
 			}
 
-			/*
-			if(horizontal != 0) {
-				if(horizontal>0 && direction==1) { // new direction > 0 (east) and old direction == 1 (west) ->  old direction set to new, animation mirrored
-					direction=0;
-					Vector3 newScale = transform.localScale;
-					newScale.x*=-1;
-					transform.localScale=newScale;
-				} else if(horizontal<0 && direction==0){
-					direction=1;
-					Vector3 newScale = transform.localScale;
-					newScale.x*=-1;
-					transform.localScale=newScale;
-				}
-			}
-			*/
 			return false;
 		}
 		/*

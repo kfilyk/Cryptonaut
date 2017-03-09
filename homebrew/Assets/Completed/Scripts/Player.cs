@@ -158,7 +158,7 @@ namespace Completed {
 #endif //End of mobile platform dependendent compilation section started above with #elif
 			//Check if we have a non-zero value for horizontal or vertical
 			if(horizontal != 0 || vertical != 0){
-				AttemptMove<Wall> (horizontal, vertical);
+				AttemptMove<MonoBehaviour> (horizontal, vertical);
 			}
 		}
 		
@@ -181,7 +181,7 @@ namespace Completed {
 			}
 			//Every time player moves, subtract from food points total.
 			//food--;
-			
+
 			//Update food text display to reflect current score.
 			//foodText.text = "Food: " + food;
 			
