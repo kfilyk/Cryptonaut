@@ -41,6 +41,7 @@ namespace Completed {
 		private Room[] rooms;                                     // All the rooms that are created for this board.
 		private Corridor[] corridors;                             // All the corridors that connect the rooms.
 		private GameObject boardHolder;                           // GameObject that acts as a container for all other tiles.
+		private int[,] positions;	// List of all enemy/player/item positions.
 
 		private void Start ()
 		{
@@ -100,16 +101,18 @@ namespace Completed {
 			numRooms = new IntRange (numRoomsMin, numRoomsMax);
 		}
 
-		void SetupTilesArray ()
-		{
+		void SetupTilesArray () {
 			// Set the tiles jagged array to the correct width.
 			tiles = new TileType[columns][];
+			positions = new int[columns, rows];
 
 			// Go through all the tile arrays...
-			for (int i = 0; i < tiles.Length; i++)
-			{
+			for (int i = 0; i < tiles.Length; i++){
 				// ... and set each tile array is the correct height.
 				tiles[i] = new TileType[rows];
+				for (int j = 0; j < rows; j++) {
+					positions [i,j] = 1; // 1= breakable wall
+				}
 			}
 		}
 
@@ -128,6 +131,11 @@ namespace Completed {
 
 			// Setup the first room, there is no previous corridor so we do not use one.
 			rooms[0].SetupRoom(roomWidth, roomHeight, columns, rows);
+			for(int i=rooms[0].xPos;i<(rooms[0].xPos+rooms[0].roomWidth);i++) {
+				for(int j=rooms[0].yPos;j<(rooms[0].yPos+rooms[0].roomHeight);j++) {
+					positions[i,j]=0;
+				}
+			}
 
 			// Setup the first corridor using the first room.
 			corridors[0].SetupCorridor(rooms[0], corridorLength, roomWidth, roomHeight, columns, rows, true);
@@ -137,7 +145,11 @@ namespace Completed {
 
 				// Setup the room based on the previous corridor.
 				rooms[i].SetupRoom (roomWidth, roomHeight, columns, rows, corridors[i - 1]);
-
+				for(int j=rooms[i].xPos;j<(rooms[i].xPos+rooms[i].roomWidth);j++) {
+					for(int k=rooms[i].yPos;k<(rooms[i].yPos+rooms[i].roomHeight);k++) {
+						positions[j,k]=0;
+					}
+				}
 				// If we haven't reached the end of the corridors array...
 				if (i < corridors.Length)
 				{
@@ -149,19 +161,25 @@ namespace Completed {
 				}
 
 				if (i == rooms.Length *.5f) { 
-					Vector3 playerPos = new Vector3 (rooms[i].xPos, rooms[i].yPos, 0);
+					int pX = Random.Range (rooms [i].xPos, rooms [i].xPos + rooms [i].roomWidth);
+					int pY = Random.Range (rooms [i].yPos, rooms [i].yPos + rooms [i].roomHeight);
+					Vector3 playerPos = new Vector3 (pX, pY, 0);
 					Instantiate(player, playerPos, Quaternion.identity);
+					positions [(int)pX, (int)pY] = 2; // 2== player
 				}
 				if (i != rooms.Length *.5f) { 
 					int eX = Random.Range (rooms [i].xPos, rooms [i].xPos + rooms [i].roomWidth);
 					int eY = Random.Range (rooms [i].yPos, rooms [i].yPos + rooms [i].roomHeight);
-					while (player.transform.position.x == eX && player.transform.position.y == eY) {
+
+					while (positions[(int)eX, (int)eY]!=0) { // 0==empty (floor)
 						eX = Random.Range (rooms [i].xPos, rooms [i].xPos + rooms [i].roomWidth);
 						eY = Random.Range (rooms [i].yPos, rooms [i].yPos + rooms [i].roomHeight);					
 					}
+
 					Vector3 enemyPos = new Vector3(eX, eY, 0);
 					GameObject enemyChoice = enemyTiles[Random.Range (0, enemyTiles.Length)];
-					Instantiate(enemyChoice, enemyPos, Quaternion.identity);				
+					Instantiate(enemyChoice, enemyPos, Quaternion.identity);
+					//positions [(int)eX, (int)eY] = 3; // 3== enemy
 				}
 
 			}
@@ -467,6 +485,7 @@ namespace Completed {
 
 					// Set the tile at these coordinates to Floor.
 					tiles[xCoord][yCoord] = TileType.Floor;
+
 				}
 			}
 		}
